@@ -93,13 +93,23 @@ public final class PartialFormatter {
      - returns: Formatted phone number string.
      */
     public func formatPartial(_ rawNumber: String) -> String {
+        // Verify if number contains Arabic
+        let predicate = NSPredicate(format: "SELF MATCHES %@", "(?s).*\\p{Arabic}.*")
+        let containsArabic = predicate.evaluate(with: rawNumber)
+
+        // Convert number to latin
+        var latinRawNumber = rawNumber
+        if #available(iOS 9.0, *) {
+            latinRawNumber = rawNumber.applyingTransform(.toLatin, reverse: false) ?? rawNumber
+        }
+
         // Always reset variables with each new raw number
         self.resetVariables()
 
-        guard self.isValidRawNumber(rawNumber) else {
+        guard self.isValidRawNumber(latinRawNumber) else {
             return rawNumber
         }
-        let split = splitNumberAndPausesOrWaits(rawNumber)
+        let split = splitNumberAndPausesOrWaits(latinRawNumber)
         
         var nationalNumber = self.nationalNumber(from: split.number)
         if let formats = availableFormats(nationalNumber) {
@@ -129,6 +139,9 @@ public final class PartialFormatter {
             finalNumber = String(finalNumber[..<finalNumber.index(before: finalNumber.endIndex)])
         }
         finalNumber.append(split.pausesOrWaits)
+        if containsArabic, #available(iOS 9.0, *) {
+            finalNumber = finalNumber.applyingTransform(.latinToArabic, reverse: false) ?? finalNumber
+        }
         return finalNumber
     }
 

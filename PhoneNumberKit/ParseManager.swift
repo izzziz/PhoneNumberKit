@@ -34,12 +34,17 @@ final class ParseManager {
         let region = region.uppercased()
         // Extract number (2)
 
-        var nationalNumber = numberString
+        // Convert number to latin
+        var latinNumberString = numberString
+        if #available(iOS 9.0, *) {
+            latinNumberString = numberString.applyingTransform(.toLatin, reverse: false) ?? numberString
+        }
 
-        let match = try regexManager.phoneDataDetectorMatch(numberString)
+        var nationalNumber = latinNumberString
+
+        let match = try regexManager.phoneDataDetectorMatch(latinNumberString)
         let matchedNumber = nationalNumber.substring(with: match.range)
-        // Replace Arabic and Persian numerals and let the rest unchanged
-        nationalNumber = regexManager.stringByReplacingOccurrences(matchedNumber, map: PhoneNumberPatterns.allNormalizationMappings, keepUnmapped: true)
+        nationalNumber = matchedNumber
 
         // Strip and extract extension (3)
         var numberExtension: String?
@@ -93,7 +98,7 @@ final class ParseManager {
             }
         }
 
-        let phoneNumber = PhoneNumber(numberString: numberString, countryCode: countryCode, leadingZero: leadingZero, nationalNumber: finalNationalNumber, numberExtension: numberExtension, type: type, regionID: regionMetadata.codeID)
+        let phoneNumber = PhoneNumber(numberString: latinNumberString, countryCode: countryCode, leadingZero: leadingZero, nationalNumber: finalNationalNumber, numberExtension: numberExtension, type: type, regionID: regionMetadata.codeID)
         return phoneNumber
     }
 
